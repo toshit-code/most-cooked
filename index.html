@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Powerstrip</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="light-theme">
+    <div class="container">
+      <!-- Home Page -->
+      <div class="page active" id="home-page">
+        <div class="header">
+          <h1>Smart Powerstrip</h1>
+          <p>Control your devices</p>
+        </div>
+
+        <div class="glass-card">
+          <!-- Compact Socket Grid -->
+          <div class="sockets-grid" id="socketsGrid">
+            <!-- Sockets will be dynamically generated -->
+          </div>
+
+          <!-- Stats -->
+          <div class="stats">
+            <div class="stat-item">
+              <div class="stat-value" id="totalPower">33W</div>
+              <div class="stat-label">Total Power</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="activeSockets">1 / 4</div>
+              <div class="stat-label">Active Sockets</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impact Page -->
+      <div class="page" id="impact-page">
+        <div class="header">
+          <h1>Your Impact</h1>
+          <p>Making a difference, one watt at a time</p>
+        </div>
+
+        <div class="glass-card">
+          <div class="impact-stats">
+            <div class="impact-item">
+              <div class="tree-decoration">🌳</div>
+              <div class="impact-value">0.1</div>
+              <div class="impact-label">Trees Worth of CO₂ Absorbed</div>
+              <div class="impact-description">
+                Equivalent to planting 1 tree
+              </div>
+            </div>
+
+            <div class="impact-item">
+              <div class="tree-decoration">🌲</div>
+              <div class="impact-value">1247</div>
+              <div class="impact-label">Energy Saved</div>
+              <div class="impact-description">Power you didn't waste</div>
+            </div>
+
+            <div class="impact-item">
+              <div class="tree-decoration">🌴</div>
+              <div class="impact-value">1.15</div>
+              <div class="impact-label">CO₂ Avoided</div>
+              <div class="impact-description">Greenhouse gas prevented</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Page -->
+      <div class="page" id="settings-page">
+        <div class="header">
+          <h1>Settings</h1>
+          <p>Customize your sockets</p>
+        </div>
+
+        <div class="status-bar">
+          <button
+            id="connectESP"
+            class="connect-btn"
+            onclick="connectToESP32()"
+          >
+            🔗 Connect ESP32
+          </button>
+          <span id="connectionStatus">🔴 Disconnected</span>
+          <span id="receivingStatus">—</span>
+        </div>
+
+        <div class="glass-card">
+          <div class="setting-group">
+            <label class="setting-label">Socket 1 Name</label>
+            <input
+              type="text"
+              class="setting-input"
+              value="Socket 1"
+              placeholder="Enter socket name"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 1 Power Limit (W)</label>
+            <input
+              type="number"
+              class="setting-input"
+              value="100"
+              placeholder="Enter power limit"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 2 Name</label>
+            <input
+              type="text"
+              class="setting-input"
+              value="Socket 2"
+              placeholder="Enter socket name"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 2 Power Limit (W)</label>
+            <input
+              type="number"
+              class="setting-input"
+              value="100"
+              placeholder="Enter power limit"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 3 Name</label>
+            <input
+              type="text"
+              class="setting-input"
+              value="Socket 3"
+              placeholder="Enter socket name"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 3 Power Limit (W)</label>
+            <input
+              type="number"
+              class="setting-input"
+              value="100"
+              placeholder="Enter power limit"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 4 Name</label>
+            <input
+              type="text"
+              class="setting-input"
+              value="Socket 4"
+              placeholder="Enter socket name"
+            />
+          </div>
+
+          <div class="setting-group">
+            <label class="setting-label">Socket 4 Power Limit (W)</label>
+            <input
+              type="number"
+              class="setting-input"
+              value="100"
+              placeholder="Enter power limit"
+            />
+          </div>
+
+          <button class="save-btn" onclick="saveSettings()">
+            Save Settings
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Navigation -->
+      <div class="bottom-nav">
+        <button class="nav-item active" onclick="showPage('home-page')">
+          Home
+        </button>
+        <button class="nav-item" onclick="showPage('impact-page')">
+          Impact
+        </button>
+        <button class="nav-item" onclick="showPage('settings-page')">
+          Settings
+        </button>
+        <button class="theme-toggle-nav" onclick="toggleTheme()">
+          <span class="theme-toggle-icon" id="theme-nav-icon">🌙</span>
+          <span id="theme-nav-text">Theme</span>
+        </button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

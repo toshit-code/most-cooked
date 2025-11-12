@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Powerstrip</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+        --light-bg:linear-gradient(135deg,#fff 0%,#f0f9ff 25%,#e0f2fe 50%,#ccfbf1 75%,#a5f3fc 100%);
+        --light-text:#1e293b;
+        --light-text-secondary:#64748b;
+        --light-card-bg:rgba(255,255,255,.7);
+        --light-card-border:rgba(255,255,255,.4);
+        --light-socket-bg:rgba(255,255,255,.6);
+        --light-socket-border:rgba(255,255,255,.4);
+        --light-stat-bg:rgba(255,255,255,.6);
+        --light-nav-bg:rgba(255,255,255,.7);
+        --light-toggle-off:linear-gradient(135deg,#cbd5e1,#94a3b8);
+        --light-toggle-on:linear-gradient(135deg,#10b981,#059669);
+        --light-toggle-knob:linear-gradient(135deg,#fff,#f8fafc);
+        --light-toggle-icon:#64748b;
+        --light-shadow:rgba(0,0,0,.08);
+        --light-inset-shadow:rgba(255,255,255,.8);
+        --dark-bg:linear-gradient(135deg,#0f0f0f 0%,#1a1a1a 50%,#2d2d2d 100%);
+        --dark-text:#e2e8f0;
+        --dark-text-secondary:#94a3b8;
+        --dark-card-bg:rgba(30,30,30,.6);
+        --dark-card-border:rgba(255,255,255,.1);
+        --dark-socket-bg:rgba(40,40,40,.6);
+        --dark-socket-border:rgba(255,255,255,.1);
+        --dark-stat-bg:rgba(40,40,40,.6);
+        --dark-nav-bg:rgba(30,30,30,.6);
+        --dark-toggle-off:linear-gradient(135deg,#374151,#4b5563);
+        --dark-toggle-on:linear-gradient(135deg,#10b981,#059669);
+        --dark-toggle-knob:linear-gradient(135deg,#4b5563,#374151);
+        --dark-toggle-icon:#9ca3af;
+        --dark-shadow:rgba(0,0,0,.4);
+        --dark-inset-shadow:rgba(255,255,255,.05)
+    }
+    body{
+        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+        background:var(--light-bg);
+        color:var(--light-text);
+        line-height:1.6;
+        min-height:100vh;
+        padding:20px;
+        transition:.5s;
+        overflow-x: hidden;
+    }
+    body.dark-theme{
+        background:var(--dark-bg);
+        color:var(--dark-text)
+    }
+    .container{
+        max-width:480px;
+        margin:0 auto;
+        min-height:100vh;
+        display:flex;
+        flex-direction:column
+    }
+    .header{
+        text-align:center;
+        margin-bottom:30px;
+        padding:20px 0
+    }
+    .header h1{
+        font-size:32px;
+        font-weight:700;
+        margin-bottom:8px;
+        background:linear-gradient(135deg,#0ea5e9,#10b981);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+        text-shadow:0 2px 4px rgba(0,0,0,.1)
+    }
+    .dark-theme .header h1{
+        text-shadow:0 2px 4px rgba(0,0,0,.3)
+    }
+    .header p{
+        font-size:16px;
+        color:var(--light-text-secondary)
+    }
+    .dark-theme .header p{
+        color:var(--dark-text-secondary)
+    }
+    .glass-card{
+        background:var(--light-card-bg);
+        backdrop-filter:blur(20px);
+        border-radius:24px;
+        padding:24px;
+        margin-bottom:20px;
+        box-shadow:0 8px 32px var(--light-shadow),0 2px 4px var(--light-inset-shadow) inset;
+        border:1px solid var(--light-card-border);
+        transition:.5s
+    }
+    .dark-theme .glass-card{
+        background:var(--dark-card-bg);
+        box-shadow:0 8px 32px var(--dark-shadow),0 2px 4px var(--dark-inset-shadow) inset;
+        border:1px solid var(--dark-card-border)
+    }
+    .sockets-grid{
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:16px;
+        margin:20px 0
+    }
+    .socket-item{
+        text-align:center;
+        padding:16px 8px;
+        border-radius:20px;
+        background:var(--light-socket-bg);
+        backdrop-filter:blur(10px);
+        border:1px solid var(--light-socket-border);
+        transition:.3s;
+        position:relative
+    }
+    .dark-theme .socket-item{
+        background:var(--dark-socket-bg);
+        border:1px solid var(--dark-socket-border)
+    }
+    .socket-item:hover{
+        background:rgba(255,255,255,.8);
+        transform:translateY(-2px);
+        box-shadow:0 8px 20px var(--light-shadow)
+    }
+    .dark-theme .socket-item:hover{
+        background:rgba(50,50,50,.8);
+        box-shadow:0 8px 20px var(--dark-shadow)
+    }
+    .socket-name{
+        font-size:14px;
+        font-weight:600;
+        margin-bottom:12px;
+        color:var(--light-text)
+    }
+    .dark-theme .socket-name{
+        color:var(--dark-text)
+    }
+    .socket-priority-badge{
+        position:absolute;
+        top:8px;
+        right:8px;
+        background:linear-gradient(135deg,#f59e0b,#d97706);
+        color:#fff;
+        font-size:10px;
+        font-weight:600;
+        padding:2px 6px;
+        border-radius:8px;
+        box-shadow:0 2px 4px rgba(0,0,0,.2)
+    }
+    .toggle-container{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:8px
+    }
+    .toggle-switch{
+        width:70px;
+        height:70px;
+        border-radius:50%;
+        background:var(--light-toggle-off);
+        border:none;
+        cursor:pointer;
+        position:relative;
+        transition:.4s cubic-bezier(0.4,0,0.2,1);
+        box-shadow:inset 0 4px 8px rgba(255,255,255,.8),inset 0 -4px 8px rgba(0,0,0,.1),0 6px 12px var(--light-shadow)
+    }
+    .dark-theme .toggle-switch{
+        background:var(--dark-toggle-off);
+        box-shadow:inset 0 4px 8px rgba(255,255,255,.05),inset 0 -4px 8px rgba(0,0,0,.4),0 6px 12px var(--dark-shadow)
+    }
+    .toggle-switch.on{
+        background:var(--light-toggle-on);
+        animation:pulse-glow 2s ease-in-out infinite;
+        box-shadow:inset 0 4px 12px rgba(255,255,255,.4),inset 0 -4px 8px rgba(0,0,0,.1),0 0 30px rgba(16,185,129,.3),0 6px 12px var(--light-shadow)
+    }
+    .dark-theme .toggle-switch.on{
+        background:var(--dark-toggle-on);
+        box-shadow:inset 0 4px 12px rgba(255,255,255,.1),inset 0 -4px 8px rgba(0,0,0,.3),0 0 30px rgba(16,185,129,.4),0 6px 12px var(--dark-shadow)
+    }
+    .toggle-switch:hover{
+        transform:scale(1.05)
+    }
+    .toggle-switch:active{
+        transform:scale(.95);
+        transition:transform .1s
+    }
+    .toggle-knob{
+        width:50px;
+        height:50px;
+        border-radius:50%;
+        background:var(--light-toggle-knob);
+        position:absolute;
+        top:10px;
+        left:10px;
+        transition:.4s cubic-bezier(0.4,0,0.2,1);
+        box-shadow:0 4px 8px rgba(0,0,0,.15),inset 0 2px 4px rgba(255,255,255,.9);
+        display:flex;
+        align-items:center;
+        justify-content:center
+    }
+    .dark-theme .toggle-knob{
+        background:var(--dark-toggle-knob);
+        box-shadow:0 4px 8px rgba(0,0,0,.4),inset 0 2px 4px rgba(255,255,255,.1)
+    }
+    .toggle-switch.on .toggle-knob{
+        transform:scale(.85)
+    }
+    .toggle-icon{
+        font-size:20px;
+        color:var(--light-toggle-icon);
+        transition:.3s
+    }
+    .dark-theme .toggle-icon{
+        color:var(--dark-toggle-icon)
+    }
+    .toggle-switch.on .toggle-icon{
+        color:#10b981;
+        filter:brightness(1.2)
+    }
+    .dark-theme .toggle-switch.on .toggle-icon{
+        text-shadow:0 0 8px rgba(16,185,129,.5)
+    }
+    .power-info{
+        font-size:12px;
+        font-weight:600;
+        color:var(--light-text-secondary);
+        transition:.3s;
+        opacity:0;
+        height:0;
+        overflow:hidden
+    }
+    .dark-theme .power-info{
+        color:var(--dark-text-secondary)
+    }
+    .power-info.visible{
+        opacity:1;
+        height:auto
+    }
+    .power-value{
+        color:#10b981;
+        font-weight:700
+    }
+    .dark-theme .power-value{
+        text-shadow:0 0 8px rgba(16,185,129,.3)
+    }
+    .stats{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:16px;
+        margin-top:20px
+    }
+    .stat-item{
+        text-align:center;
+        padding:16px;
+        background:var(--light-stat-bg);
+        border-radius:16px;
+        backdrop-filter:blur(10px);
+        border:1px solid var(--light-card-border);
+        box-shadow:0 4px 12px var(--light-shadow);
+        transition:.5s
+    }
+    .dark-theme .stat-item{
+        background:var(--dark-stat-bg);
+        border:1px solid var(--dark-card-border);
+        box-shadow:0 4px 12px var(--dark-shadow)
+    }
+    .stat-value{
+        font-size:24px;
+        font-weight:700;
+        margin-bottom:4px;
+        color:var(--light-text)
+    }
+    .dark-theme .stat-value{
+        color:var(--dark-text)
+    }
+    .stat-label{
+        font-size:12px;
+        color:var(--light-text-secondary)
+    }
+    .dark-theme .stat-label{
+        color:var(--dark-text-secondary)
+    }
+    .bottom-nav{
+        background:var(--light-nav-bg);
+        backdrop-filter:blur(20px);
+        border-radius:20px;
+        padding:16px;
+        display:grid;
+        grid-template-columns:repeat(5,1fr);
+        gap:6px;
+        box-shadow:0 8px 32px var(--light-shadow),0 2px 4px var(--light-inset-shadow) inset;
+        border:1px solid var(--light-card-border);
+        margin-top:auto;
+        transition:.5s
+    }
+    .dark-theme .bottom-nav{
+        background:var(--dark-nav-bg);
+        box-shadow:0 8px 32px var(--dark-shadow),0 2px 4px var(--dark-inset-shadow) inset;
+        border:1px solid var(--dark-card-border)
+    }
+    .nav-item{
+        text-align:center;
+        padding:12px 4px;
+        border-radius:14px;
+        cursor:pointer;
+        transition:.3s;
+        font-size:12px;
+        font-weight:600;
+        background:transparent;
+        border:none;
+        color:var(--light-text-secondary)
+    }
+    .dark-theme .nav-item{
+        color:var(--dark-text-secondary)
+    }
+    .nav-item.active{
+        background:linear-gradient(135deg,#0ea5e9,#10b981);
+        color:#fff;
+        box-shadow:0 4px 12px rgba(14,165,233,.3)
+    }
+    .dark-theme .nav-item.active{
+        color:#0f172a;
+        box-shadow:0 4px 12px rgba(59,130,246,.4)
+    }
+    .nav-item:hover:not(.active){
+        background:rgba(255,255,255,.8);
+        color:var(--light-text)
+    }
+    .dark-theme .nav-item:hover:not(.active){
+        background:rgba(255,255,255,.1);
+        color:var(--dark-text)
+    }
+    .theme-toggle-nav{
+        text-align:center;
+        padding:12px 4px;
+        border-radius:14px;
+        cursor:pointer;
+        transition:.3s;
+        font-size:12px;
+        font-weight:600;
+        background:transparent;
+        border:none;
+        color:var(--light-text-secondary);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:4px
+    }
+    .dark-theme .theme-toggle-nav{
+        color:var(--dark-text-secondary)
+    }
+    .theme-toggle-nav:hover{
+        background:rgba(255,255,255,.8);
+        color:var(--light-text)
+    }
+    .dark-theme .theme-toggle-nav:hover{
+        background:rgba(255,255,255,.1);
+        color:var(--dark-text)
+    }
+    .theme-toggle-icon{
+        font-size:14px
+    }
+    .impact-stats{
+        display:flex;
+        flex-direction:column;
+        gap:16px;
+        margin-top:20px
+    }
+    .impact-item{
+        background:var(--light-stat-bg);
+        border-radius:20px;
+        padding:20px;
+        text-align:center;
+        backdrop-filter:blur(10px);
+        border:1px solid var(--light-card-border);
+        position:relative;
+        overflow:hidden;
+        box-shadow:0 4px 12px var(--light-shadow);
+        transition:.5s
+    }
+    .dark-theme .impact-item{
+        background:var(--dark-stat-bg);
+        border:1px solid var(--dark-card-border);
+        box-shadow:0 4px 12px var(--dark-shadow)
+    }
+    .impact-value{
+        font-size:32px;
+        font-weight:700;
+        margin-bottom:8px;
+        color:var(--light-text)
+    }
+    .dark-theme .impact-value{
+        color:var(--dark-text)
+    }
+    .impact-label{
+        font-size:14px;
+        margin-bottom:4px;
+        color:var(--light-text);
+        font-weight:600
+    }
+    .dark-theme .impact-label{
+        color:var(--dark-text)
+    }
+    .impact-description{
+        font-size:12px;
+        color:var(--light-text-secondary)
+    }
+    .dark-theme .impact-description{
+        color:var(--dark-text-secondary)
+    }
+    .tree-decoration{
+        position:absolute;
+        bottom:10px;
+        right:20px;
+        font-size:24px;
+        opacity:.15
+    }
+    .dark-theme .tree-decoration{
+        filter:brightness(.8)
+    }
+    .socket-settings-group,.auto-turnoff-group{
+        margin-bottom:20px;
+        background:var(--light-stat-bg);
+        padding:20px;
+        border-radius:16px;
+        backdrop-filter:blur(10px);
+        border:1px solid var(--light-card-border);
+        box-shadow:0 4px 12px var(--light-shadow);
+        transition:.5s
+    }
+    .dark-theme .socket-settings-group,.dark-theme .auto-turnoff-group{
+        background:var(--dark-stat-bg);
+        border:1px solid var(--dark-card-border);
+        box-shadow:0 4px 12px var(--dark-shadow)
+    }
+    .socket-settings-header,.auto-turnoff-header{
+        font-size:18px;
+        font-weight:700;
+        margin-bottom:16px;
+        color:var(--light-text);
+        border-bottom:2px solid rgba(14,165,233,.3);
+        padding-bottom:8px
+    }
+    .dark-theme .socket-settings-header,.dark-theme .auto-turnoff-header{
+        color:var(--dark-text);
+        border-bottom:2px solid rgba(59,130,246,.3)
+    }
+    .setting-row{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:12px;
+        margin-bottom:12px
+    }
+    .setting-label{
+        display:block;
+        margin-bottom:6px;
+        font-size:14px;
+        font-weight:600;
+        color:var(--light-text)
+    }
+    .dark-theme .setting-label{
+        color:var(--dark-text)
+    }
+    .setting-input,.priority-select{
+        width:100%;
+        padding:10px 12px;
+        border:2px solid rgba(203,213,225,.5);
+        border-radius:10px;
+        font-size:14px;
+        background:rgba(255,255,255,.8);
+        color:var(--light-text);
+        transition:.3s
+    }
+    .dark-theme .setting-input,.dark-theme .priority-select{
+        border:2px solid rgba(55,65,81,.5);
+        background:rgba(30,30,30,.8);
+        color:var(--dark-text)
+    }
+    .setting-input:focus,.priority-select:focus{
+        outline:none;
+        border-color:#0ea5e9;
+        background:rgba(255,255,255,.95);
+        box-shadow:0 0 0 3px rgba(14,165,233,.1)
+    }
+    .dark-theme .setting-input:focus,.dark-theme .priority-select:focus{
+        border-color:#3b82f6;
+        background:rgba(40,40,40,.9);
+        box-shadow:0 0 0 3px rgba(59,130,246,.2)
+    }
+    .setting-input::placeholder{
+        color:#94a3b8
+    }
+    .auto-turnoff-toggle{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        margin-bottom:16px;
+        padding:12px;
+        background:rgba(255,255,255,.6);
+        border-radius:12px;
+        border:1px solid var(--light-card-border)
+    }
+    .dark-theme .auto-turnoff-toggle{
+        background:rgba(30,30,30,.6);
+        border:1px solid var(--dark-card-border)
+    }
+    .auto-turnoff-options{
+        display:none;
+        padding:16px;
+        background:rgba(255,255,255,.4);
+        border-radius:12px;
+        border:1px solid var(--light-card-border);
+        margin-top:12px
+    }
+    .dark-theme .auto-turnoff-options{
+        background:rgba(30,30,30,.4);
+        border:1px solid var(--dark-card-border)
+    }
+    .auto-turnoff-options.show{
+        display:block
+    }
+    .auto-turnoff-option{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        padding:12px;
+        margin-bottom:8px;
+        background:rgba(255,255,255,.8);
+        border-radius:10px;
+        border:1px solid var(--light-card-border);
+        cursor:pointer;
+        transition:.3s
+    }
+    .dark-theme .auto-turnoff-option{
+        background:rgba(40,40,40,.8);
+        border:1px solid var(--dark-card-border)
+    }
+    .auto-turnoff-option:hover{
+        background:rgba(255,255,255,.9)
+    }
+    .dark-theme .auto-turnoff-option:hover{
+        background:rgba(50,50,50,.9)
+    }
+    .auto-turnoff-option.selected{
+        background:rgba(14,165,233,.1);
+        border-color:#0ea5e9
+    }
+    .dark-theme .auto-turnoff-option.selected{
+        background:rgba(59,130,246,.2);
+        border-color:#3b82f6
+    }
+    .option-radio{
+        width:18px;
+        height:18px;
+        border:2px solid #cbd5e1;
+        border-radius:50%;
+        display:flex;
+        align-items:center;
+        justify-content:center
+    }
+    .auto-turnoff-option.selected .option-radio{
+        border-color:#0ea5e9;
+        background:#0ea5e9
+    }
+    .dark-theme .auto-turnoff-option.selected .option-radio{
+        border-color:#3b82f6;
+        background:#3b82f6
+    }
+    .option-radio::after{
+        content:'';
+        width:8px;
+        height:8px;
+        border-radius:50%;
+        background:#fff;
+        display:none
+    }
+    .auto-turnoff-option.selected .option-radio::after{
+        display:block
+    }
+    .option-label{
+        flex:1;
+        font-size:14px;
+        font-weight:600;
+        color:var(--light-text)
+    }
+    .dark-theme .option-label{
+        color:var(--dark-text)
+    }
+    .option-description{
+        font-size:12px;
+        color:var(--light-text-secondary);
+        margin-top:2px
+    }
+    .dark-theme .option-description{
+        color:var(--dark-text-secondary)
+    }
+    .small-toggle{
+        width:50px;
+        height:28px;
+        background:#cbd5e1;
+        border-radius:14px;
+        position:relative;
+        cursor:pointer;
+        transition:.3s
+    }
+    .dark-theme .small-toggle{
+        background:#4b5563
+    }
+    .small-toggle.on{
+        background:#10b981
+    }
+    .small-toggle-knob{
+        width:22px;
+        height:22px;
+        background:#fff;
+        border-radius:50%;
+        position:absolute;
+        top:3px;
+        left:3px;
+        transition:.3s;
+        box-shadow:0 2px 4px rgba(0,0,0,.2)
+    }
+    .small-toggle.on .small-toggle-knob{
+        left:25px
+    }
+    .save-btn{
+        width:100%;
+        padding:16px;
+        background:linear-gradient(135deg,#0ea5e9,#10b981);
+        color:#fff;
+        border:none;
+        border-radius:16px;
+        font-size:16px;
+        font-weight:600;
+        cursor:pointer;
+        transition:.3s;
+        margin-top:20px;
+        box-shadow:0 8px 20px rgba(14,165,233,.3)
+    }
+    .dark-theme .save-btn{
+        background:linear-gradient(135deg,#3b82f6,#10b981);
+        color:#0f172a;
+        box-shadow:0 8px 20px rgba(59,130,246,.4)
+    }
+    .save-btn:hover{
+        transform:translateY(-2px);
+        box-shadow:0 12px 25px rgba(14,165,233,.4)
+    }
+    .dark-theme .save-btn:hover{
+        box-shadow:0 12px 25px rgba(59,130,246,.5)
+    }
+    .save-btn:active{
+        transform:translateY(0)
+    }
+    .chart-container{
+        background:var(--light-stat-bg);
+        border-radius:16px;
+        padding:20px;
+        margin-bottom:16px;
+        backdrop-filter:blur(10px);
+        border:1px solid var(--light-card-border);
+        box-shadow:0 4px 12px var(--light-shadow);
+        transition:.5s;
+        height:300px
+    }
+    .dark-theme .chart-container{
+        background:var(--dark-stat-bg);
+        border:1px solid var(--dark-card-border);
+        box-shadow:0 4px 12px var(--dark-shadow)
+    }
+    .chart-controls{
+        display:flex;
+        gap:8px;
+        margin-bottom:16px;
+        flex-wrap:wrap
+    }
+    .time-range-btn{
+        padding:8px 16px;
+        border:2px solid rgba(203,213,225,.5);
+        border-radius:10px;
+        background:rgba(255,255,255,.8);
+        color:var(--light-text);
+        font-size:12px;
+        font-weight:600;
+        cursor:pointer;
+        transition:.3s;
+        flex:1;
+        min-width:60px
+    }
+    .dark-theme .time-range-btn{
+        border:2px solid rgba(55,65,81,.5);
+        background:rgba(30,30,30,.8);
+        color:var(--dark-text)
+    }
+    .time-range-btn.active{
+        background:linear-gradient(135deg,#0ea5e9,#10b981);
+        color:#fff;
+        border-color:transparent
+    }
+    .chart-title{
+        font-size:16px;
+        font-weight:700;
+        margin-bottom:16px;
+        color:var(--light-text);
+        text-align:center
+    }
+    .dark-theme .chart-title{
+        color:var(--dark-text)
+    }
+    .consumption-stats{
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:12px;
+        margin-top:16px
+    }
+    .consumption-stat{
+        text-align:center;
+        padding:12px;
+        background:var(--light-card-bg);
+        border-radius:12px;
+        border:1px solid var(--light-card-border)
+    }
+    .dark-theme .consumption-stat{
+        background:var(--dark-card-bg);
+        border:1px solid var(--dark-card-border)
+    }
+    .consumption-value{
+        font-size:18px;
+        font-weight:700;
+        color:var(--light-text);
+        margin-bottom:4px
+    }
+    .dark-theme .consumption-value{
+        color:var(--dark-text)
+    }
+    .consumption-label{
+        font-size:11px;
+        color:var(--light-text-secondary)
+    }
+    .dark-theme .consumption-label{
+        color:var(--dark-text-secondary)
+    }
+    .page{
+        display:none
+    }
+    .page.active{
+        display:block
+    }
+    @keyframes pulse-glow{
+        0%,100%{
+            box-shadow:inset 0 4px 12px rgba(255,255,255,.4),inset 0 -4px 8px rgba(0,0,0,.1),0 0 30px rgba(16,185,129,.3),0 6px 12px var(--light-shadow)
+        }
+        50%{
+            box-shadow:inset 0 4px 12px rgba(255,255,255,.4),inset 0 -4px 8px rgba(0,0,0,.1),0 0 40px rgba(16,185,129,.4),0 6px 12px var(--light-shadow)
+        }
+    }
+    .dark-theme .toggle-switch.on{
+        animation:pulse-glow-dark 2s ease-in-out infinite
+    }
+    @keyframes pulse-glow-dark{
+        0%,100%{
+            box-shadow:inset 0 4px 12px rgba(255,255,255,.1),inset 0 -4px 8px rgba(0,0,0,.3),0 0 30px rgba(16,185,129,.4),0 6px 12px var(--dark-shadow)
+        }
+        50%{
+            box-shadow:inset 0 4px 12px rgba(255,255,255,.1),inset 0 -4px 8px rgba(0,0,0,.3),0 0 40px rgba(16,185,129,.6),0 6px 12px var(--dark-shadow)
+        }
+    }
+    
+    /* Bluetooth Connection Styles */
+    .bluetooth-status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        padding: 10px;
+        border-radius: 12px;
+        background: var(--light-card-bg);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--light-card-border);
+        transition: .5s;
+    }
+    .dark-theme .bluetooth-status {
+        background: var(--dark-card-bg);
+        border: 1px solid var(--dark-card-border);
+    }
+    .bluetooth-status.connected {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: #10b981;
+    }
+    .bluetooth-status.disconnected {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+    }
+    .bluetooth-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    .bluetooth-connected .bluetooth-indicator {
+        background-color: #10b981;
+        box-shadow: 0 0 8px #10b981;
+    }
+    .bluetooth-disconnected .bluetooth-indicator {
+        background-color: #ef4444;
+    }
+    .bluetooth-connect-btn {
+        background: linear-gradient(135deg, #0ea5e9, #10b981);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .3s;
+        margin-left: auto;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+    .bluetooth-connect-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(14, 165, 233, 0.4);
+    }
+    .bluetooth-connect-btn:active {
+        transform: translateY(0);
+    }
+    
+    /* Home/Away Toggle */
+    .home-away-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 15px 0;
+        gap: 10px;
+    }
+    .home-away-btn {
+        background: linear-gradient(135deg, #0ea5e9, #10b981);
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: .3s;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+    .home-away-btn.away {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .home-away-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(14, 165, 233, 0.4);
+    }
+    
+    /* Maintenance Popup Styles */
+    .maintenance-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 400px;
+        background: var(--light-card-bg);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        border: 1px solid var(--light-card-border);
+        z-index: 1000;
+        display: none;
+    }
+    .dark-theme .maintenance-popup {
+        background: var(--dark-card-bg);
+        border: 1px solid var(--dark-card-border);
+    }
+    .maintenance-popup.active {
+        display: block;
+    }
+    .popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(14,165,233,.3);
+        cursor: move;
+    }
+    .popup-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--light-text);
+    }
+    .dark-theme .popup-title {
+        color: var(--dark-text);
+    }
+    .close-popup {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--light-text-secondary);
+        padding: 5px;
+        border-radius: 8px;
+        transition: .3s;
+    }
+    .close-popup:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+    .maintenance-card {
+        display: grid;
+        gap: 12px;
+    }
+    .maint-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        background: var(--light-stat-bg);
+        border-radius: 12px;
+        border: 1px solid var(--light-card-border);
+    }
+    .dark-theme .maint-row {
+        background: var(--dark-stat-bg);
+        border: 1px solid var(--dark-card-border);
+    }
+    .maint-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .maint-input {
+        width: 80px;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(0,0,0,.08);
+        font-size: 14px;
+    }
+    .dark-theme .maint-input {
+        background: rgba(30,30,30,.8);
+        border: 1px solid rgba(255,255,255,.1);
+        color: var(--dark-text);
+    }
+    .back-home-btn {
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: none;
+        background: #f59e0b;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    
+    /* Voice Control Styles */
+    .voice-control-container {
+        text-align: center;
+        margin: 20px 0;
+    }
+    .voice-control-btn {
+        background: linear-gradient(135deg, #0ea5e9, #10b981);
+        border: none;
+        border-radius: 50px;
+        padding: 16px 24px;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 auto;
+    }
+    .voice-control-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(14, 165, 233, 0.4);
+    }
+    .voice-control-btn:active {
+        transform: translateY(0);
+    }
+    .voice-control-btn.listening {
+        background: linear-gradient(135deg, #ef4444, #f59e0b);
+        animation: pulse 1.5s infinite;
+    }
+    .voice-icon {
+        font-size: 20px;
+    }
+    .voice-status {
+        margin-top: 8px;
+        font-size: 14px;
+        color: var(--light-text-secondary);
+        min-height: 20px;
+    }
+    .dark-theme .voice-status {
+        color: var(--dark-text-secondary);
+    }
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+    .voice-command-feedback {
+        background: var(--light-card-bg);
+        border-radius: 12px;
+        padding: 12px;
+        margin: 10px 0;
+        border-left: 4px solid #10b981;
+    }
+    .dark-theme .voice-command-feedback {
+        background: var(--dark-card-bg);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 480px) {
+        .sockets-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .socket-item {
+            padding: 12px 6px;
+        }
+        .toggle-switch {
+            width: 60px;
+            height: 60px;
+        }
+        .toggle-knob {
+            width: 40px;
+            height: 40px;
+            top: 10px;
+            left: 10px;
+        }
+        .stats {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .bottom-nav {
+            padding: 12px;
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .theme-toggle-nav {
+            grid-column: 1 / -1;
+            margin-top: 8px;
+        }
+        .setting-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .chart-controls {
+            flex-direction: column;
+        }
+        .time-range-btn {
+            flex: none;
+        }
+        .maintenance-popup {
+            width: 95%;
+            padding: 15px;
+        }
+        .voice-control-btn {
+            padding: 14px 20px;
+            font-size: 14px;
+        }
+    }
+</style>
+</head>
+<body class="light-theme">
+    <div class="container">
+        <!-- Home Page -->
+        <div class="page active" id="home-page">
+            <div class="header">
+                <h1 id="pageTitle">Smart Powerstrip</h1>
+                <p>Control your devices</p>
+                
+                <!-- Home/Away Toggle -->
+                <div class="home-away-toggle">
+                    <button class="home-away-btn" id="homeAwayBtn" onclick="toggleHomeAway()">
+                        <span id="homeAwayText">Home Mode</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Voice Control Section -->
+            <div class="voice-control-container">
+                <button class="voice-control-btn" id="voiceControlBtn" onclick="toggleVoiceControl()">
+                    <span class="voice-icon">🎤</span>
+                    <span class="voice-text">Voice Control</span>
+                </button>
+                <div class="voice-status" id="voiceStatus">Click mic to speak</div>
+            </div>
+
+            <!-- Bluetooth Connection Status -->
+            <div class="bluetooth-status disconnected" id="bluetoothStatus">
+                <div class="bluetooth-indicator"></div>
+                <span id="bluetoothStatusText">Disconnected from ESP32</span>
+                <button class="bluetooth-connect-btn" id="bluetoothConnectBtn">Connect</button>
+            </div>
+
+            <div class="glass-card">
+                <!-- Compact Socket Grid -->
+                <div class="sockets-grid" id="socketsGrid">
+                    <!-- Sockets will be dynamically generated -->
+                </div>
+
+                <!-- Stats -->
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalPower">0W</div>
+                        <div class="stat-label">Total Power</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="activeSockets">0 / 3</div>
+                        <div class="stat-label">Active Sockets</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Impact Page -->
+        <div class="page" id="impact-page">
+            <div class="header">
+                <h1>Your Impact</h1>
+                <p>Making a difference, one watt at a time</p>
+            </div>
+
+            <div class="glass-card">
+                <div class="impact-stats">
+                    <div class="impact-item">
+                        <div class="tree-decoration">🌳</div>
+                        <div class="impact-value" id="treesSaved">0.0</div>
+                        <div class="impact-label">Trees Worth of CO₂ Absorbed</div>
+                        <div class="impact-description">Equivalent to planting 1 tree</div>
+                    </div>
+
+                    <div class="impact-item">
+                        <div class="tree-decoration">🌲</div>
+                        <div class="impact-value" id="energySaved">0</div>
+                        <div class="impact-label">Energy Saved</div>
+                        <div class="impact-description">Power you didn't waste</div>
+                    </div>
+
+                    <div class="impact-item">
+                        <div class="tree-decoration">🌴</div>
+                        <div class="impact-value" id="co2Avoided">0.0</div>
+                        <div class="impact-label">CO₂ Avoided</div>
+                        <div class="impact-description">Greenhouse gas prevented</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Consumptions Page -->
+        <div class="page" id="consumption-page">
+            <div class="header">
+                <h1>My Consumptions</h1>
+                <p>Track your energy usage patterns</p>
+            </div>
+
+            <div class="glass-card">
+                <div class="chart-controls">
+                    <button class="time-range-btn active" onclick="changeTimeRange('daily')">Daily</button>
+                    <button class="time-range-btn" onclick="changeTimeRange('weekly')">Weekly</button>
+                    <button class="time-range-btn" onclick="changeTimeRange('monthly')">Monthly</button>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title" id="chartTitle">Today's Power Consumption</div>
+                    <canvas id="consumptionChart"></canvas>
+                </div>
+
+                <div class="consumption-stats">
+                    <div class="consumption-stat">
+                        <div class="consumption-value" id="peakUsage">0W</div>
+                        <div class="consumption-label">Peak Usage</div>
+                    </div>
+                    <div class="consumption-stat">
+                        <div class="consumption-value" id="avgUsage">0W</div>
+                        <div class="consumption-label">Average Usage</div>
+                    </div>
+                    <div class="consumption-stat">
+                        <div class="consumption-value" id="totalUsage">0kWh</div>
+                        <div class="consumption-label">Total Today</div>
+                    </div>
+                    <div class="consumption-stat">
+                        <div class="consumption-value" id="costEstimate">₹0.00</div>
+                        <div class="consumption-label">Cost Estimate</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="settings-page">
+            <div class="header">
+                <h1>Settings</h1>
+                <p>Customize your sockets</p>
+            </div>
+
+            <div class="glass-card">
+                <!-- Auto Turn Off Settings -->
+                <div class="auto-turnoff-group">
+                    <div class="auto-turnoff-header">Auto Turn Off When Not Home</div>
+                    <div class="auto-turnoff-toggle">
+                        <div>
+                            <div class="setting-label">Enable Auto Turn Off</div>
+                            <div class="option-description">Automatically turn off sockets when you leave home</div>
+                        </div>
+                        <div class="small-toggle" id="autoTurnOffToggle" onclick="toggleAutoTurnOff()">
+                            <div class="small-toggle-knob"></div>
+                        </div>
+                    </div>
+                    <div class="auto-turnoff-options" id="autoTurnOffOptions">
+                        <div class="auto-turnoff-option selected" onclick="selectAutoTurnOffOption('priority')">
+                            <div class="option-radio"></div>
+                            <div>
+                                <div class="option-label">Leave Priority Sockets On</div>
+                                <div class="option-description">Only priority sockets remain active when away</div>
+                            </div>
+                        </div>
+                        <div class="auto-turnoff-option" onclick="selectAutoTurnOffOption('all')">
+                            <div class="option-radio"></div>
+                            <div>
+                                <div class="option-label">Turn Off All Sockets</div>
+                                <div class="option-description">All sockets turn off when you leave home</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Socket Settings (3 sockets only) -->
+                <div class="socket-settings-group" id="socket-settings-1">
+                    <div class="socket-settings-header">Socket 1 Settings</div>
+                    <div class="setting-row">
+                        <div>
+                            <label class="setting-label">Socket Name</label>
+                            <input type="text" class="setting-input socket-name-input" data-socket="1" value="Lamp" placeholder="Enter socket name">
+                        </div>
+                        <div>
+                            <label class="setting-label">Power Limit (W)</label>
+                            <input type="number" class="setting-input socket-limit-input" data-socket="1" value="100" placeholder="Enter power limit">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="setting-label">Socket Priority</label>
+                        <select class="priority-select" data-socket="1">
+                            <option value="general">General Socket</option>
+                            <option value="priority">Priority Socket</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="socket-settings-group" id="socket-settings-2">
+                    <div class="socket-settings-header">Socket 2 Settings</div>
+                    <div class="setting-row">
+                        <div>
+                            <label class="setting-label">Socket Name</label>
+                            <input type="text" class="setting-input socket-name-input" data-socket="2" value="Charger" placeholder="Enter socket name">
+                        </div>
+                        <div>
+                            <label class="setting-label">Power Limit (W)</label>
+                            <input type="number" class="setting-input socket-limit-input" data-socket="2" value="100" placeholder="Enter power limit">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="setting-label">Socket Priority</label>
+                        <select class="priority-select" data-socket="2">
+                            <option value="general">General Socket</option>
+                            <option value="priority">Priority Socket</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="socket-settings-group" id="socket-settings-3">
+                    <div class="socket-settings-header">Socket 3 Settings</div>
+                    <div class="setting-row">
+                        <div>
+                            <label class="setting-label">Socket Name</label>
+                            <input type="text" class="setting-input socket-name-input" data-socket="3" value="TV" placeholder="Enter socket name">
+                        </div>
+                        <div>
+                            <label class="setting-label">Power Limit (W)</label>
+                            <input type="number" class="setting-input socket-limit-input" data-socket="3" value="100" placeholder="Enter power limit">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="setting-label">Socket Priority</label>
+                        <select class="priority-select" data-socket="3">
+                            <option value="general">General Socket</option>
+                            <option value="priority" selected>Priority Socket</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Maintenance Popup -->
+        <div class="maintenance-popup" id="maintenancePopup">
+            <div class="popup-header" id="popupHeader">
+                <div class="popup-title">Maintenance Controls</div>
+                <button class="close-popup" onclick="closeMaintenancePopup()">×</button>
+            </div>
+            <div class="maintenance-card">
+                <div><small>Maintenance controls (works only when ESP32 is connected)</small></div>
+
+                <!-- Socket controls (generated dynamically) -->
+                <div id="maintenanceSockets"></div>
+
+                <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+                    <button class="back-home-btn" onclick="closeMaintenancePopup()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <button class="nav-item active" onclick="showPage('home-page')">Home</button>
+            <button class="nav-item" onclick="showPage('consumption-page')">Consumption</button>
+            <button class="nav-item" onclick="showPage('impact-page')">Impact</button>
+            <button class="nav-item" onclick="showPage('settings-page')">Settings</button>
+            <button class="theme-toggle-nav" onclick="toggleTheme()">
+                <span class="theme-toggle-icon" id="theme-nav-icon">🌙</span>
+                <span id="theme-nav-text">Theme</span>
+            </button>
+        </div>
+    </div>
+   
+       <script src="app.js"></script>
+
+    
+    </body>
+</html>
